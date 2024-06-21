@@ -35,6 +35,7 @@ source=(
   https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.{xz,sign}
   $url/releases/download/$_srctag/linux-$_srctag.patch.zst{,.sig}
   config  # the main kernel config file
+  reproducible-btf-pahole.patch
 )
 validpgpkeys=(
   ABAF11C65A2970B130ABE3C479BE3E4300411886  # Linus Torvalds
@@ -46,12 +47,14 @@ sha256sums=('a51fb4ab5003a6149bd9bf4c18c9b1f0f4945c272549095ab154b9d1052f95b1'
             'SKIP'
             '72943f6a9c52126e85bec66edaf4e9338443f4b660b9639d5298d2b661c4b292'
             'SKIP'
-            '89ff6a9109faf89d94a96ecca79afb463af946eabc196c3a494595d599d47f68')
+            'fc264de4d1098423af682bb1392326951870a2a505f202fa85506ddb3c8a26a1'
+            'a952f0c232f7e9f2bef1790cbb93e9c8c8a74b4281bd79a0effeb97d690d0307')
 b2sums=('a120ee2517ff9bdc164a55cbd78929b545d77d8f3b4d09e8903ea9c2f1a85ef837b079524dd465b3f0cf268ee1f6db5166ccb5676ac67b31bca1927ea0a6997b'
         'SKIP'
         'fcc4a45448386f158b20487035037e03694901b63d77a3ce92906f5f7faaaf36346e540bebdb035f8fb42647632efa6d452d2fb52c97996bda81c3032d9fa055'
         'SKIP'
-        '59275c61c530d0bafb3866402d538fc8b4be0c88193bcaf6b378e88fa1fc9bf93a87dd73d7d4defb660b054403fa246fbcca14510fa7b36d71918cb5820ce10e')
+        '196e9b37e6c746d65b992c7ab31c52d4aef25a761014800b4d7ee301d0f50384e1e9c5af90f314ba1e54cdffd78795430dd300238fb429366a58336d31a89d65'
+        '2463070eb142e9115f3bff21f92415512a3cf0e4f3161fe6cd5bca3d707f0903a8425462d66d5e3cf0fb4ebaff200ba32bed1a035821e8e4ba693dd568e4ac88')
 
 export KBUILD_BUILD_HOST=archlinux
 export KBUILD_BUILD_USER=$pkgbase

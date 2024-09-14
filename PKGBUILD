@@ -25,10 +25,6 @@ makedepends=(
   python-yaml
   texlive-latexextra
 )
-options=(
-  !debug
-  !strip
-)
 _srcname=linux-${pkgver%.*}
 _srctag=v${pkgver%.*}-${pkgver##*.}
 source=(
@@ -190,24 +186,6 @@ _package-headers() {
 
   echo "Removing loose objects..."
   find "$builddir" -type f -name '*.o' -printf 'Removing %P\n' -delete
-
-  echo "Stripping build tools..."
-  local file
-  while read -rd '' file; do
-    case "$(file -Sib "$file")" in
-      application/x-sharedlib\;*)      # Libraries (.so)
-        strip -v $STRIP_SHARED "$file" ;;
-      application/x-archive\;*)        # Libraries (.a)
-        strip -v $STRIP_STATIC "$file" ;;
-      application/x-executable\;*)     # Binaries
-        strip -v $STRIP_BINARIES "$file" ;;
-      application/x-pie-executable\;*) # Relocatable binaries
-        strip -v $STRIP_SHARED "$file" ;;
-    esac
-  done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
-
-  echo "Stripping vmlinux..."
-  strip -v $STRIP_STATIC "$builddir/vmlinux"
 
   echo "Adding symlink..."
   mkdir -p "$pkgdir/usr/src"

@@ -42,12 +42,12 @@ sha256sums=('4a516e5ed748537a73cb42ec47fbbeb6df8b1298e8892c29c0e91de79095b297'
             'SKIP'
             '4b8c223bba9b89337b7085b24810b9b6027d95d931b2daedd43e2c5a50477f60'
             'SKIP'
-            '751d4ade810a8d480a925d6cc5e7ea8ae70b15e6738897b475cdadc674de0b21')
+            'e1630d48150e468b343c1ecb869ba55217ca3b4d8ec7172330976e5cd0d1b8bf')
 b2sums=('3146bbc9075b84db4c6ad3a64cbb91e3c379d0b8e9e90029eaf6a5bd37ea2b8a0a4ac1227e73d0e8acd20cab392841e046e148523bdb206302ea6c37a934b451'
         'SKIP'
         '084502afe7f205949b3337ac0031da62441121e1fb4ddd64719b72f5f99451b5a56776c8dabd12678abb3e64f1a859b13f7322439045cc8994b2d2b9c57717e1'
         'SKIP'
-        '6f4c208d71519ddc6ff6c8fac3754f5fd254491a5a70171cf035269e640b7ca051be605ff3c8452c7e38f7fb2d4fc65960860601e7b348fa1c3418132ba9d5e8')
+        '77554259595d1d8018c84ea66b682f202a3b73de46dc670562d6c68868d02c0867facccb645cf0a79d69b44d5c28eaf6ff3404e0a9a2e3dde471ddd252d59337')
 
 export KBUILD_BUILD_HOST=archlinux
 export KBUILD_BUILD_USER=$pkgbase
@@ -120,7 +120,7 @@ _package() {
   echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
 
   echo "Installing modules..."
-  ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
+  ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" \
     DEPMOD=/doesnt/exist modules_install  # Suppress depmod
 
   # remove build link

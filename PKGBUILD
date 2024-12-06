@@ -25,6 +25,7 @@ makedepends=(
   python-yaml
   texlive-latexextra
 )
+options=(zipkmod)
 _srcname=linux-${pkgver%.*}
 _srctag=v${pkgver%.*}-${pkgver##*.}
 source=(
@@ -120,7 +121,7 @@ _package() {
   echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
 
   echo "Installing modules..."
-  ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" \
+  make INSTALL_MOD_PATH="$pkgdir/usr" \
     DEPMOD=/doesnt/exist modules_install  # Suppress depmod
 
   # remove build link

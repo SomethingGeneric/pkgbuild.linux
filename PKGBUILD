@@ -37,7 +37,8 @@ _srctag=v${pkgver%.*}-${pkgver##*.}
 source=(
   https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.{xz,sign}
   $url/releases/download/$_srctag/linux-$_srctag.patch.zst{,.sig}
-  config  # the main kernel config file
+  config.arm64
+  config.x86
 )
 validpgpkeys=(
   ABAF11C65A2970B130ABE3C479BE3E4300411886  # Linus Torvalds
@@ -49,12 +50,20 @@ sha256sums=('9b607166a1c999d8326098121222feb080a20a3253975fcdfa2de96ba7f757a7'
             'SKIP'
             'e45ecc05c3123143b719e2fa974e9ef1a927e230d328d19bbebf0e9189103db8'
             'SKIP'
+            '712047e65565849d97c550ea2cf8308c2de4e46f8d36d05439f9fd7e4753c326'
             'cc01bdc1a6897ccfb00d6aa73cbfa304905a674e3528814e480b3f9f3bc54028')
 b2sums=('0edb2324be5638aa75984128aafdba3e50824187d2fcdff8794eab99d85c10c3a17d1e840053c2c83df5ee11fdf69f1c9452c57ecc9dae01c4af38180fe7821a'
         'SKIP'
         '9c5ace0b1bfd7a38aaa87f94dd39332a3be1d30031210f513069ddcc124326d1763441c74a87f62487a84b0f5e5c083ab48968366305e83871fe4a2e6a1a3e5f'
         'SKIP'
+        '3496a093220d9371628f525efff96d2746776f2e3ffaf6e0765d1887964c177b9236b09f39c486f8c961a1d0885a5d872348f20d9623ef014fd6926eada4b1a9'
         '124bc7b0366bf79efed1a7737c4abc8639c270e72dee9aa364cce12e9c704e50278267239521fb011341ba8a4412cadb547ea77e1ad1fb70c4e3d279decce4df')
+
+case "${CARCH}" in
+ x86_64)  KARCH=x86 ;;
+ aarch64) KARCH=arm64 ;;
+esac
+export KARCH
 
 export KBUILD_BUILD_HOST=archlinux
 export KBUILD_BUILD_USER=$pkgbase
@@ -78,9 +87,9 @@ prepare() {
   done
 
   echo "Setting config..."
-  cp ../config .config
+  cp "../config.${KARCH}" .config
   make olddefconfig
-  diff -u ../config .config || :
+  diff -u "../config.${KARCH}" .config || :
 
   make -s kernelrelease > version
   echo "Prepared $pkgbase version $(<version)"
@@ -146,20 +155,22 @@ _package-headers() {
   install -Dt "$builddir" -m644 .config Makefile Module.symvers System.map \
     localversion.* version vmlinux tools/bpf/bpftool/vmlinux.h
   install -Dt "$builddir/kernel" -m644 kernel/Makefile
-  install -Dt "$builddir/arch/x86" -m644 arch/x86/Makefile
+  install -Dt "$builddir/arch/${KARCH}" -m644 "arch/${KARCH}/Makefile"
   cp -t "$builddir" -a scripts
   ln -srt "$builddir" "$builddir/scripts/gdb/vmlinux-gdb.py"
 
   # required when STACK_VALIDATION is enabled
-  install -Dt "$builddir/tools/objtool" tools/objtool/objtool
+  if grep -q "CONFIG_HAVE_STACK_VALIDATION=y" "../config.${KARCH}"; then
+    install -Dt "$builddir/tools/objtool" tools/objtool/objtool
+  fi
 
   # required when DEBUG_INFO_BTF_MODULES is enabled
   install -Dt "$builddir/tools/bpf/resolve_btfids" tools/bpf/resolve_btfids/resolve_btfids
 
   echo "Installing headers..."
   cp -t "$builddir" -a include
-  cp -t "$builddir/arch/x86" -a arch/x86/include
-  install -Dt "$builddir/arch/x86/kernel" -m644 arch/x86/kernel/asm-offsets.s
+  cp -t "$builddir/arch/${KARCH}" -a "arch/${KARCH}/include"
+  install -Dt "$builddir/arch/${KARCH}/kernel" -m644 "arch/${KARCH}/kernel/asm-offsets.s"
 
   install -Dt "$builddir/drivers/md" -m644 drivers/md/*.h
   install -Dt "$builddir/net/mac80211" -m644 net/mac80211/*.h
@@ -179,8 +190,10 @@ _package-headers() {
   find . -name 'Kconfig*' -exec install -Dm644 {} "$builddir/{}" \;
 
   echo "Installing Rust files..."
-  install -Dt "$builddir/rust" -m644 rust/*.rmeta
-  install -Dt "$builddir/rust" rust/*.so
+  if grep -q "CONFIG_RUST=y" "../config.${KARCH}"; then
+    install -Dt "$builddir/rust" -m644 rust/*.rmeta
+    install -Dt "$builddir/rust" rust/*.so
+  fi
 
   echo "Installing unstripped VDSO..."
   make INSTALL_MOD_PATH="$pkgdir/usr" vdso_install \
@@ -189,7 +202,7 @@ _package-headers() {
   echo "Removing unneeded architectures..."
   local arch
   for arch in "$builddir"/arch/*/; do
-    [[ $arch = */x86/ ]] && continue
+    [[ $arch = */"${KARCH}"/ ]] && continue
     echo "Removing $(basename "$arch")"
     rm -r "$arch"
   done

@@ -1,10 +1,10 @@
-# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Maintainer: Matt C <matt@xhec.dev>
 
 pkgbase=linux
-pkgver=6.17.1.arch1
+pkgver=6.17.5
 pkgrel=1
 pkgdesc='Linux'
-url='https://github.com/archlinux/linux'
+url='https://github.com/torvalds/linux'
 arch=(x86_64)
 license=(GPL-2.0-only)
 makedepends=(
@@ -35,26 +35,21 @@ options=(
 _srcname=linux-${pkgver%.*}
 _srctag=v${pkgver%.*}-${pkgver##*.}
 source=(
-  https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.{xz,sign}
-  $url/releases/download/$_srctag/linux-$_srctag.patch.zst{,.sig}
+  https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.xz #,sign}
   config  # the main kernel config file
 )
-validpgpkeys=(
-  ABAF11C65A2970B130ABE3C479BE3E4300411886  # Linus Torvalds
-  647F28654894E3BD457199BE38DBBDC86092693E  # Greg Kroah-Hartman
-  83BC8889351B5DEBBB68416EB8AC08600F108CDF  # Jan Alexander Steffens (heftig)
-)
+# validpgpkeys=(
+#   ABAF11C65A2970B130ABE3C479BE3E4300411886  # Linus Torvalds
+#   647F28654894E3BD457199BE38DBBDC86092693E  # Greg Kroah-Hartman
+#   83BC8889351B5DEBBB68416EB8AC08600F108CDF  # Jan Alexander Steffens (heftig)
+# )
+
 # https://www.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc
-sha256sums=('a53dbe3f41491922a61f17c5cc551e88f544d5411aeb1c8c65c402795c4f4da0'
-            'SKIP'
-            'a54fc872d8de04688d59f4123132661c24804735afefdf95896621bb23974ef1'
-            'SKIP'
-            '57786a01f3cfaeb696f79bf3b19996f7f787df3df8c6fbf6a9654aced518ec93')
-b2sums=('44fa5ec3e5471d33171830e8890f41118daa27f10eedb8dd0fe57250463a596a6fdefbc0ee68d8afab252e7635c9ca9eb3009b1849442e3f6de6231f47d1d7df'
-        'SKIP'
-        '5623c0079397f677d87aa95c7f563c18e179aba004f89a1984952ac56b0d352a65823213805a77aaf6a5832e5779a2dbdb3142ec8eb78e2a3520ce5456a442f3'
-        'SKIP'
-        '50e11148e620be002a0f16b9145afc77482d04c206591a55880f95c32ed048e9781a80bddf63d27e103ecad1eb034b36084dc47633d45cf804b03fef19585b57')
+
+sha256sums=('9b607166a1c999d8326098121222feb080a20a3253975fcdfa2de96ba7f757a7'
+            '31e9abd56679725d58a3da3ed692c6b54dda22c80bb50f2086524fff5590e1ef')
+b2sums=('0edb2324be5638aa75984128aafdba3e50824187d2fcdff8794eab99d85c10c3a17d1e840053c2c83df5ee11fdf69f1c9452c57ecc9dae01c4af38180fe7821a'
+        'e4c1d4ed860795005171344b6929204f32e23a1c90aba2ca31b54dfc1c2a027b0add60485b82946091066b03d4e2051b2f872bf2cd1f426455777c030f483a55')
 
 export KBUILD_BUILD_HOST=archlinux
 export KBUILD_BUILD_USER=$pkgbase
@@ -67,30 +62,24 @@ prepare() {
   echo "-$pkgrel" > localversion.10-pkgrel
   echo "${pkgbase#linux}" > localversion.20-pkgname
 
-  local src
-  for src in "${source[@]}"; do
-    src="${src%%::*}"
-    src="${src##*/}"
-    src="${src%.zst}"
-    [[ $src = *.patch ]] || continue
-    echo "Applying patch $src..."
-    patch -Np1 < "../$src"
-  done
-
   echo "Setting config..."
   cp ../config .config
   make olddefconfig
+
+  make menuconfig
+  
   diff -u ../config .config || :
 
   make -s kernelrelease > version
   echo "Prepared $pkgbase version $(<version)"
+  cp .config ../config
 }
 
 build() {
   cd $_srcname
-  make all
+  make all -j$(nproc)
   make -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
-  make htmldocs SPHINXOPTS=-QT
+  #make htmldocs SPHINXOPTS=-QT
 }
 
 _package() {
@@ -226,29 +215,29 @@ _package-headers() {
   ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
 }
 
-_package-docs() {
-  pkgdesc="Documentation for the $pkgdesc kernel"
-
-  cd $_srcname
-  local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
-
-  echo "Installing documentation..."
-  local src dst
-  while read -rd '' src; do
-    dst="${src#Documentation/}"
-    dst="$builddir/Documentation/${dst#output/}"
-    install -Dm644 "$src" "$dst"
-  done < <(find Documentation -name '.*' -prune -o ! -type d -print0)
-
-  echo "Adding symlink..."
-  mkdir -p "$pkgdir/usr/share/doc"
-  ln -sr "$builddir/Documentation" "$pkgdir/usr/share/doc/$pkgbase"
-}
+# _package-docs() {
+#   pkgdesc="Documentation for the $pkgdesc kernel"
+# 
+#   cd $_srcname
+#   local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
+# 
+#   echo "Installing documentation..."
+#   local src dst
+#   while read -rd '' src; do
+#     dst="${src#Documentation/}"
+#     dst="$builddir/Documentation/${dst#output/}"
+#     install -Dm644 "$src" "$dst"
+#   done < <(find Documentation -name '.*' -prune -o ! -type d -print0)
+# 
+#   echo "Adding symlink..."
+#   mkdir -p "$pkgdir/usr/share/doc"
+#   ln -sr "$builddir/Documentation" "$pkgdir/usr/share/doc/$pkgbase"
+# }
 
 pkgname=(
   "$pkgbase"
   "$pkgbase-headers"
-  "$pkgbase-docs"
+#  "$pkgbase-docs"
 )
 for _p in "${pkgname[@]}"; do
   eval "package_$_p() {

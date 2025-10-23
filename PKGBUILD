@@ -66,7 +66,7 @@ prepare() {
   cp ../config .config
   make olddefconfig
 
-  make menuconfig
+  # make menuconfig
   
   diff -u ../config .config || :
 
